@@ -1,4 +1,4 @@
-module github.com/hashicorp/packer-plugin-lume
+module github.com/warpbuilds/packer-plugin-lume
 
 go 1.22
 

@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/hashicorp/packer-plugin-lume/builder/lume/statekey"
+	"github.com/warpbuilds/packer-plugin-lume/builder/lume/statekey"
 
 	"github.com/diskfs/go-diskfs"
 	"github.com/diskfs/go-diskfs/partition/gpt"

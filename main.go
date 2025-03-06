@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hashicorp/packer-plugin-lume/builder/lume"
-	"github.com/hashicorp/packer-plugin-lume/version"
+	"github.com/warpbuilds/packer-plugin-lume/builder/lume"
+	"github.com/warpbuilds/packer-plugin-lume/version"
 
 	"github.com/hashicorp/packer-plugin-sdk/plugin"
 )

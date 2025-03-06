@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/hashicorp/packer-plugin-lume/builder/lume/recoverypartition"
+	"github.com/warpbuilds/packer-plugin-lume/builder/lume/recoverypartition"
 
 	"github.com/diskfs/go-diskfs"
 	"github.com/diskfs/go-diskfs/partition/gpt"
