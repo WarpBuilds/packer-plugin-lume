@@ -1,4 +1,4 @@
-NAME=scaffolding
+NAME=lume
 BINARY=packer-plugin-${NAME}
 
 COUNT?=1
