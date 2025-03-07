@@ -2,9 +2,7 @@ package lume
 
 import (
 	"context"
-	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
@@ -31,29 +29,36 @@ func (s *stepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	if config.CpuCount != 0 {
 		createArguments = append(createArguments, "--cpu", strconv.Itoa(int(config.CpuCount)))
 	}
-	if config.MemoryMb != 0 {
-		createArguments = append(createArguments, "--memory", strconv.Itoa(int(config.MemoryMb)))
+	if len(config.Memory) > 0 {
+		createArguments = append(createArguments, "--memory", config.Memory)
 	}
-	if config.DiskSizeGb > 0 {
-		createArguments = append(createArguments, "--disk-size", strconv.Itoa(int(config.DiskSizeGb)))
+	if len(config.DiskSize) > 0 {
+		createArguments = append(createArguments, "--disk-size", config.DiskSize)
 	}
 
 	createArguments = append(createArguments, config.VMName)
 
-	if _, err := LumeExec().WithContext(ctx).WithPackerUI(ui).WithArgs(createArguments...).Do(); err != nil {
-		err := fmt.Errorf("Failed to create a VM: %s", err)
+	outChan, errChan := LumeExec().
+		WithContext(ctx).
+		WithPackerUI(ui).
+		WithArgs(createArguments...).
+		DoChanPty()
+
+	// Consume stdout lines in a goroutine or via select.
+	go func() {
+		for line := range outChan {
+			// process stdout line
+			ui.Message(line)
+		}
+	}()
+
+	if err, ok := <-errChan; ok {
 		state.Put("error", err)
+		ui.Errorf("[Error] While creating vm: %v", err)
 		return multistep.ActionHalt
 	}
 
 	state.Put("vm_name", config.VMName)
-
-	if config.CreateGraceTime != 0 {
-		message := fmt.Sprintf("Waiting %v to let the Virtualization.Framework's installation process "+
-			"to finish correctly...", config.CreateGraceTime)
-		ui.Say(message)
-		time.Sleep(config.CreateGraceTime)
-	}
 
 	return multistep.ActionContinue
 }

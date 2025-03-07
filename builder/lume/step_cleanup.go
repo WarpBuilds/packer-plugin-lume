@@ -31,6 +31,7 @@ func (s *stepCleanVM) Cleanup(state multistep.StateBag) {
 	}
 
 	ui.Say("Cleaning up virtual machine...")
-	cmdArgs := []string{"delete", vmName}
+	cmdArgs := []string{"delete", "--force", vmName}
+
 	_, _ = LumeExec().WithContext(context.Background()).WithPackerUI(ui).WithArgs(cmdArgs...).Do()
 }

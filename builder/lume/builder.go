@@ -32,12 +32,12 @@ type Config struct {
 	VMName     string `mapstructure:"vm_name"`
 
 	CpuCount          uint8         `mapstructure:"cpu_count"`
-	CreateGraceTime   time.Duration `mapstructure:"create_grace_time"`
-	DiskSizeGb        uint16        `mapstructure:"disk_size_gb"`
+	VNCGraceTime      time.Duration `mapstructure:"vnc_grace_time"`
+	DiskSize          string        `mapstructure:"disk_size"`
 	RecoveryPartition string        `mapstructure:"recovery_partition"`
 	Display           string        `mapstructure:"display"`
 	Headless          bool          `mapstructure:"headless"`
-	MemoryMb          uint16        `mapstructure:"memory_mb"`
+	Memory            string        `mapstructure:"memory"`
 	Recovery          bool          `mapstructure:"recovery"`
 	Rosetta           string        `mapstructure:"rosetta"`
 	RunExtraArgs      []string      `mapstructure:"run_extra_args"`
@@ -113,10 +113,10 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 		steps = append(steps, new(stepCloneVM))
 	}
 
-	steps = append(steps,
-		new(stepSetVM),
-		new(stepDiskFilePrepare),
-	)
+	// steps = append(steps,
+	// 	new(stepSetVM), // commenting since setvm isn't needed
+	// 	new(stepDiskFilePrepare), // commenting since diskfile prepare isn't needed
+	// )
 
 	communicatorConfigured := b.config.CommunicatorConfig.Type != "none"
 	if len(b.config.BootCommand) > 0 || communicatorConfigured {
@@ -136,7 +136,7 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 				},
 				SSHConfig: b.config.CommunicatorConfig.SSHConfigFunc(),
 			},
-			new(stepResize),
+			// new(stepResize),
 			&commonsteps.StepProvision{},
 		)
 	}

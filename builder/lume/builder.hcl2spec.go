@@ -81,16 +81,13 @@ type FlatConfig struct {
 	IPSW                      *string           `mapstructure:"ipsw" cty:"ipsw" hcl:"ipsw"`
 	VMBaseName                *string           `mapstructure:"vm_base_name" cty:"vm_base_name" hcl:"vm_base_name"`
 	VMName                    *string           `mapstructure:"vm_name" cty:"vm_name" hcl:"vm_name"`
-	AllowInsecure             *bool             `mapstructure:"allow_insecure" cty:"allow_insecure" hcl:"allow_insecure"`
-	AlwaysPull                *bool             `mapstructure:"always_pull" cty:"always_pull" hcl:"always_pull"`
-	PullConcurrency           *uint16           `mapstructure:"pull_concurrency" cty:"pull_concurrency" hcl:"pull_concurrency"`
 	CpuCount                  *uint8            `mapstructure:"cpu_count" cty:"cpu_count" hcl:"cpu_count"`
-	CreateGraceTime           *string           `mapstructure:"create_grace_time" cty:"create_grace_time" hcl:"create_grace_time"`
-	DiskSizeGb                *uint16           `mapstructure:"disk_size_gb" cty:"disk_size_gb" hcl:"disk_size_gb"`
+	VNCGraceTime              *string           `mapstructure:"vnc_grace_time" cty:"vnc_grace_time" hcl:"vnc_grace_time"`
+	DiskSize                  *string           `mapstructure:"disk_size" cty:"disk_size" hcl:"disk_size"`
 	RecoveryPartition         *string           `mapstructure:"recovery_partition" cty:"recovery_partition" hcl:"recovery_partition"`
 	Display                   *string           `mapstructure:"display" cty:"display" hcl:"display"`
 	Headless                  *bool             `mapstructure:"headless" cty:"headless" hcl:"headless"`
-	MemoryGb                  *uint16           `mapstructure:"memory_gb" cty:"memory_gb" hcl:"memory_gb"`
+	Memory                    *string           `mapstructure:"memory" cty:"memory" hcl:"memory"`
 	Recovery                  *bool             `mapstructure:"recovery" cty:"recovery" hcl:"recovery"`
 	Rosetta                   *string           `mapstructure:"rosetta" cty:"rosetta" hcl:"rosetta"`
 	RunExtraArgs              []string          `mapstructure:"run_extra_args" cty:"run_extra_args" hcl:"run_extra_args"`
@@ -180,16 +177,13 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"ipsw":                         &hcldec.AttrSpec{Name: "ipsw", Type: cty.String, Required: false},
 		"vm_base_name":                 &hcldec.AttrSpec{Name: "vm_base_name", Type: cty.String, Required: false},
 		"vm_name":                      &hcldec.AttrSpec{Name: "vm_name", Type: cty.String, Required: false},
-		"allow_insecure":               &hcldec.AttrSpec{Name: "allow_insecure", Type: cty.Bool, Required: false},
-		"always_pull":                  &hcldec.AttrSpec{Name: "always_pull", Type: cty.Bool, Required: false},
-		"pull_concurrency":             &hcldec.AttrSpec{Name: "pull_concurrency", Type: cty.Number, Required: false},
 		"cpu_count":                    &hcldec.AttrSpec{Name: "cpu_count", Type: cty.Number, Required: false},
-		"create_grace_time":            &hcldec.AttrSpec{Name: "create_grace_time", Type: cty.String, Required: false},
-		"disk_size_gb":                 &hcldec.AttrSpec{Name: "disk_size_gb", Type: cty.Number, Required: false},
+		"vnc_grace_time":               &hcldec.AttrSpec{Name: "vnc_grace_time", Type: cty.String, Required: false},
+		"disk_size":                    &hcldec.AttrSpec{Name: "disk_size", Type: cty.String, Required: false},
 		"recovery_partition":           &hcldec.AttrSpec{Name: "recovery_partition", Type: cty.String, Required: false},
 		"display":                      &hcldec.AttrSpec{Name: "display", Type: cty.String, Required: false},
 		"headless":                     &hcldec.AttrSpec{Name: "headless", Type: cty.Bool, Required: false},
-		"memory_gb":                    &hcldec.AttrSpec{Name: "memory_gb", Type: cty.Number, Required: false},
+		"memory":                       &hcldec.AttrSpec{Name: "memory", Type: cty.String, Required: false},
 		"recovery":                     &hcldec.AttrSpec{Name: "recovery", Type: cty.Bool, Required: false},
 		"rosetta":                      &hcldec.AttrSpec{Name: "rosetta", Type: cty.String, Required: false},
 		"run_extra_args":               &hcldec.AttrSpec{Name: "run_extra_args", Type: cty.List(cty.String), Required: false},
