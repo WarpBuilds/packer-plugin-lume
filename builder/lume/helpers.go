@@ -205,7 +205,7 @@ func (eb *execBuilder) DoChan() (<-chan string, <-chan string, <-chan error) {
 			lumeCmdArgs = eb.args
 		}
 		lumeCmdString := strings.Join(lumeCmdArgs, " ")
-		sleepCmdString := fmt.Sprintf("stdbuf -oL sleep %v", eb.sleepDuration)
+		sleepCmdString := fmt.Sprintf("sleep %v", eb.sleepDuration)
 		completeCmdString := fmt.Sprintf("%v && %v", sleepCmdString, lumeCmdString)
 		cmd = exec.CommandContext(eb.ctx, "/bin/bash", "-c", completeCmdString)
 	} else {

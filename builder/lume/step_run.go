@@ -43,7 +43,7 @@ func (s *stepRun) Run(ctx context.Context, state multistep.StateBag) multistep.S
 	time.Sleep(sleepDuration)
 
 	// TODO: lume change
-	runArgs := []string{"stdbuf", "-oL", "echo", "$PATH", "&&", lumeCommand, "run"}
+	runArgs := []string{"echo", "$PATH", "&&", lumeCommand, "run"}
 	if config.Headless {
 		runArgs = append(runArgs, "--no-display")
 	}
