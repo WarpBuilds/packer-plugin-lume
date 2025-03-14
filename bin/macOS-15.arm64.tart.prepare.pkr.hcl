@@ -103,8 +103,8 @@ source "lume-cli" "lume" {
     "<wait10s><leftShiftOn><tab><leftShiftOff><spacebar>",
     # Screen Time
     "<wait10s><tab><spacebar>",
-    # Siri
-    "<wait10s><tab><spacebar><leftShiftOn><tab><leftShiftOff><spacebar>",
+    # # Siri <- screen seems to be missing in newer ipsw images, commenting for now
+    # "<wait10s><tab><spacebar><leftShiftOn><tab><leftShiftOff><spacebar>",
     # Choose Your Look
     "<wait10s><leftShiftOn><tab><leftShiftOff><spacebar>",
     # Welcome to Mac
