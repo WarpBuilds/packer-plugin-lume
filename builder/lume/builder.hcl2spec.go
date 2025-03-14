@@ -88,7 +88,7 @@ type FlatConfig struct {
 	Display                   *string           `mapstructure:"display" cty:"display" hcl:"display"`
 	Headless                  *bool             `mapstructure:"headless" cty:"headless" hcl:"headless"`
 	Memory                    *string           `mapstructure:"memory" cty:"memory" hcl:"memory"`
-	Recovery                  *bool             `mapstructure:"recovery" cty:"recovery" hcl:"recovery"`
+	RecoveryMode              *bool             `mapstructure:"recovery_mode" cty:"recovery_mode" hcl:"recovery_mode"`
 	Rosetta                   *string           `mapstructure:"rosetta" cty:"rosetta" hcl:"rosetta"`
 	RunExtraArgs              []string          `mapstructure:"run_extra_args" cty:"run_extra_args" hcl:"run_extra_args"`
 	IpExtraArgs               []string          `mapstructure:"ip_extra_args" cty:"ip_extra_args" hcl:"ip_extra_args"`
@@ -184,7 +184,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"display":                      &hcldec.AttrSpec{Name: "display", Type: cty.String, Required: false},
 		"headless":                     &hcldec.AttrSpec{Name: "headless", Type: cty.Bool, Required: false},
 		"memory":                       &hcldec.AttrSpec{Name: "memory", Type: cty.String, Required: false},
-		"recovery":                     &hcldec.AttrSpec{Name: "recovery", Type: cty.Bool, Required: false},
+		"recovery_mode":                &hcldec.AttrSpec{Name: "recovery_mode", Type: cty.Bool, Required: false},
 		"rosetta":                      &hcldec.AttrSpec{Name: "rosetta", Type: cty.String, Required: false},
 		"run_extra_args":               &hcldec.AttrSpec{Name: "run_extra_args", Type: cty.List(cty.String), Required: false},
 		"ip_extra_args":                &hcldec.AttrSpec{Name: "ip_extra_args", Type: cty.List(cty.String), Required: false},
