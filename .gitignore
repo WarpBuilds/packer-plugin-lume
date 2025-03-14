@@ -7,7 +7,7 @@ crash.log
 dist/*
 .docs/*
 docs.zip
-bin
+bin/dhcp
 packer-plugin-lume
 packer-debug.log
 build/
