@@ -129,8 +129,8 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 		ui.Say("SSH")
 		ui.Sayf("%+v", b.config.CommunicatorConfig.SSH)
 		b.config.CommunicatorConfig.PauseBeforeConnect = time.Minute
-		b.config.CommunicatorConfig.SSHWaitTimeout = 10 * time.Minute
-		b.config.CommunicatorConfig.SSHTimeout = 5 * time.Minute
+		// b.config.CommunicatorConfig.SSHWaitTimeout = 10 * time.Minute
+		// b.config.CommunicatorConfig.SSHTimeout = 5 * time.Minute
 
 		steps = append(steps,
 			// &communicator.StepSSHKeyGen{
