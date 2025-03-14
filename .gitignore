@@ -9,3 +9,5 @@ dist/*
 docs.zip
 bin
 packer-plugin-lume
+packer-debug.log
+build/

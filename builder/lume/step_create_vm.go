@@ -47,8 +47,10 @@ func (s *stepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	// Consume stdout lines in a goroutine or via select.
 	go func() {
 		for line := range outChan {
-			// process stdout line
-			ui.Message(line)
+			if line != nil {
+				// process stdout line
+				ui.Message(*line)
+			}
 		}
 	}()
 

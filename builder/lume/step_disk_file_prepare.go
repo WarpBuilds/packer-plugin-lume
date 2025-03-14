@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/warpbuilds/packer-plugin-lume/builder/lume/recoverypartition"
-	"github.com/warpbuilds/packer-plugin-lume/builder/lume/statekey"
 
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
@@ -23,17 +22,18 @@ func (s *stepDiskFilePrepare) Run(ctx context.Context, state multistep.StateBag)
 
 	diskImagePath := PathInLumeHome("vms", config.VMName, "disk.img")
 
-	if config.DiskSizeGb > 0 {
-		sizeChanged, err := growDisk(config.DiskSizeGb, diskImagePath)
+	if len(config.DiskSize) > 0 {
+		// TODO: add logic to grow disk
+		// sizeChanged, err := growDisk(config.DiskSizeGb, diskImagePath)
 
-		if err != nil {
-			ui.Error(err.Error())
-			return multistep.ActionHalt
-		}
+		// if err != nil {
+		// 	ui.Error(err.Error())
+		// 	return multistep.ActionHalt
+		// }
 
-		if sizeChanged {
-			state.Put(statekey.DiskChanged, true)
-		}
+		// if sizeChanged {
+		// 	state.Put(statekey.DiskChanged, true)
+		// }
 	}
 
 	switch config.RecoveryPartition {

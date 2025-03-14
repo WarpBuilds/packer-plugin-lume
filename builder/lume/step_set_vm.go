@@ -15,7 +15,7 @@ func (s *stepSetVM) Run(ctx context.Context, state multistep.StateBag) multistep
 	config := state.Get("config").(*Config)
 	ui := state.Get("ui").(packersdk.Ui)
 
-	needToConfig := config.CpuCount > 0 || config.MemoryMb > 0 || config.Display != ""
+	needToConfig := config.CpuCount > 0 || len(config.Memory) > 0 || config.Display != ""
 	if !needToConfig {
 		return multistep.ActionContinue
 	}
@@ -26,8 +26,8 @@ func (s *stepSetVM) Run(ctx context.Context, state multistep.StateBag) multistep
 	if config.CpuCount > 0 {
 		setArguments = append(setArguments, "--cpu", strconv.FormatUint(uint64(config.CpuCount), 10))
 	}
-	if config.MemoryMb > 0 {
-		setArguments = append(setArguments, "--memory", strconv.FormatUint(uint64(config.MemoryMb)*1024, 10))
+	if len(config.Memory) > 0 {
+		setArguments = append(setArguments, "--memory", config.Memory)
 	}
 	if config.Display != "" {
 		setArguments = append(setArguments, "--display", config.Display)

@@ -19,6 +19,8 @@ import (
 	"github.com/mitchellh/iochan"
 )
 
+// TODO: lume change
+// const lumeCommand = "/Users/prashant/warpbuilds/lume/.build/arm64-apple-macosx/debug/lume"
 const lumeCommand = "lume"
 
 func PathInLumeHome(elem ...string) string {
@@ -70,7 +72,6 @@ func (eb *execBuilder) Do() (string, error) {
 
 	var cmd *exec.Cmd
 	if eb.sleepDuration != 0 {
-		// this parses to 'lume get vm <vm-id>' as an example
 		var lumeCmdArgs []string
 		if !eb.skipLumePrepend {
 			lumeCmdArgs = append([]string{lumeCommand}, eb.args...)
@@ -78,19 +79,17 @@ func (eb *execBuilder) Do() (string, error) {
 			lumeCmdArgs = eb.args
 		}
 		lumeCmdString := strings.Join(lumeCmdArgs, " ")
-
-		// sleep command parses to 'sleep 2' as an example
 		sleepCmdString := fmt.Sprintf("sleep %v", eb.sleepDuration)
-
-		// complete command parses to 'sleep 2 && lume get vm <vm-id>' as an example
 		completeCmdString := fmt.Sprintf("%v && %v", sleepCmdString, lumeCmdString)
 		cmd = exec.CommandContext(eb.ctx, "/bin/bash", "-c", completeCmdString)
 	} else {
 		cmd = exec.CommandContext(eb.ctx, lumeCommand, eb.args...)
 	}
 
-	eb.ui.Say("Going to run")
-	eb.ui.Say(cmd.String())
+	// Log the command being executed.
+	args := make([]string, len(cmd.Args)-1)
+	copy(args, cmd.Args[1:])
+	eb.ui.Sayf("Executing: %s %q", cmd.Path, args)
 
 	if eb.ui != nil {
 		return "", localexec.RunAndStream(cmd, eb.ui, []string{})
@@ -283,7 +282,7 @@ func (eb *execBuilder) DoChan() (<-chan string, <-chan string, <-chan error) {
 //	if err, ok := <-errCh; ok {
 //	     // handle error
 //	}
-func (eb *execBuilder) DoChanPty() (<-chan string, <-chan error) {
+func (eb *execBuilder) DoChanPty() (<-chan *string, <-chan error) {
 	var cmd *exec.Cmd
 	if eb.sleepDuration != 0 {
 		var lumeCmdArgs []string
@@ -311,7 +310,7 @@ func (eb *execBuilder) DoChanPty() (<-chan string, <-chan error) {
 	if err != nil {
 		errCh <- err
 		close(errCh)
-		outCh := make(chan string)
+		outCh := make(chan *string)
 		close(outCh)
 		return outCh, errCh
 	}
@@ -331,6 +330,7 @@ func (eb *execBuilder) DoChanPty() (<-chan string, <-chan error) {
 			}
 			errCh <- err
 		}
+		eb.ui.Sayf("Closing error chan. Process is complete.")
 		close(errCh)
 		ptyFile.Close()
 	}()
@@ -358,8 +358,8 @@ func readChars(r io.Reader) <-chan string {
 
 // readLines reads from the provided io.Reader and sends each line (ending with '\n')
 // on the returned channel.
-func readLines(r io.Reader) <-chan string {
-	ch := make(chan string)
+func readLines(r io.Reader) <-chan *string {
+	ch := make(chan *string, 1)
 	go func() {
 		br := bufio.NewReader(r)
 		for {
@@ -367,12 +367,13 @@ func readLines(r io.Reader) <-chan string {
 			if err != nil {
 				// If there's a partial line, send it before closing.
 				if len(line) > 0 {
-					ch <- line
+					ch <- &line
 				}
+				ch <- nil
 				close(ch)
 				return
 			}
-			ch <- line
+			ch <- &line
 		}
 	}()
 	return ch

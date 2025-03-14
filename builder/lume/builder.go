@@ -78,7 +78,7 @@ func (b *Builder) Prepare(raws ...interface{}) (generatedVars []string, warnings
 		if v {
 			fromArgsSet++
 			if fromArgsSet > 1 {
-				return nil, nil, fmt.Errorf("from_ipsw, from_iso, and vm_base_name are mutually exclusive")
+				return nil, nil, fmt.Errorf("ipsw and vm_base_name are mutually exclusive")
 			}
 		}
 	}
@@ -110,6 +110,7 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 	if b.config.IPSW != "" {
 		steps = append(steps, new(stepCreateVM))
 	} else if b.config.VMBaseName != "" {
+		// TODO: fix this, this logic probably doesn't work
 		steps = append(steps, new(stepCloneVM))
 	}
 
@@ -124,15 +125,22 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 	}
 
 	if !b.config.Recovery && communicatorConfigured {
+
+		ui.Say("SSH")
+		ui.Sayf("%+v", b.config.CommunicatorConfig.SSH)
+		b.config.CommunicatorConfig.PauseBeforeConnect = time.Minute
+		b.config.CommunicatorConfig.SSHWaitTimeout = 10 * time.Minute
+		b.config.CommunicatorConfig.SSHTimeout = 5 * time.Minute
+
 		steps = append(steps,
-			&communicator.StepSSHKeyGen{
-				CommConf:            &b.config.CommunicatorConfig,
-				SSHTemporaryKeyPair: b.config.CommunicatorConfig.SSH.SSHTemporaryKeyPair,
-			},
+			// &communicator.StepSSHKeyGen{
+			// 	CommConf:            &b.config.CommunicatorConfig,
+			// 	SSHTemporaryKeyPair: b.config.CommunicatorConfig.SSH.SSHTemporaryKeyPair,
+			// },
 			&communicator.StepConnect{
 				Config: &b.config.CommunicatorConfig,
 				Host: func(state multistep.StateBag) (string, error) {
-					return TartMachineIP(ctx, b.config.VMName, b.config.IpExtraArgs)
+					return TartMachineIP(ctx, b.config.VMName, ui, b.config.IpExtraArgs)
 				},
 				SSHConfig: b.config.CommunicatorConfig.SSHConfigFunc(),
 			},
@@ -159,11 +167,11 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 
 	// If we were interrupted or cancelled, then just exit.
 	if _, ok := state.GetOk(multistep.StateCancelled); ok {
-		return nil, errors.New("Build was cancelled.")
+		return nil, errors.New("build was cancelled")
 	}
 
 	if _, ok := state.GetOk(multistep.StateHalted); ok {
-		return nil, errors.New("Build was halted.")
+		return nil, errors.New("build was halted")
 	}
 
 	artifact := &TartVMArtifact{

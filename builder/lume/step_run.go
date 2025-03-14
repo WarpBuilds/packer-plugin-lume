@@ -1,13 +1,11 @@
 package lume
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"net"
-	"os"
-	"os/exec"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -15,6 +13,7 @@ import (
 	"github.com/apparentlymart/go-cidr/cidr"
 	"github.com/hashicorp/packer-plugin-sdk/bootcommand"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
+	"github.com/hashicorp/packer-plugin-sdk/packer"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer-plugin-sdk/template/interpolate"
 	"github.com/mitchellh/go-vnc"
@@ -22,7 +21,7 @@ import (
 
 var ErrFailedToDetectHostIP = errors.New("failed to detect host IP")
 
-var vncRegexp = regexp.MustCompile("vnc://.*:(.*)@(.*):([0-9]{1,5})")
+var vncRegexp = regexp.MustCompile(`local=(vnc://[a-zA-Z0-9\-]*:[a-zA-Z0-9\-]*@[0-9\.]*:[0-9]{1,5})`)
 
 type stepRun struct{}
 
@@ -36,14 +35,17 @@ func (s *stepRun) Run(ctx context.Context, state multistep.StateBag) multistep.S
 	ui := state.Get("ui").(packersdk.Ui)
 
 	ui.Say("Starting the virtual machine...")
-	runArgs := []string{"run", config.VMName}
+	var message string
+	sleepDuration := time.Second * 1
+	message = fmt.Sprintf("Waiting %v before starting"+
+		"...", sleepDuration)
+	ui.Say(message)
+	time.Sleep(sleepDuration)
+
+	// TODO: lume change
+	runArgs := []string{"stdbuf", "-oL", "echo", "$PATH", "&&", lumeCommand, "run"}
 	if config.Headless {
-		runArgs = append(runArgs, "--no-graphics")
-	} else {
-		runArgs = append(runArgs, "--graphics")
-	}
-	if !config.DisableVNC {
-		runArgs = append(runArgs, "--vnc-experimental")
+		runArgs = append(runArgs, "--no-display")
 	}
 	if config.Recovery {
 		runArgs = append(runArgs, "--recovery")
@@ -54,36 +56,167 @@ func (s *stepRun) Run(ctx context.Context, state multistep.StateBag) multistep.S
 	if len(config.RunExtraArgs) > 0 {
 		runArgs = append(runArgs, config.RunExtraArgs...)
 	}
-	cmd := exec.CommandContext(ctx, lumeCommand, runArgs...)
-	stdout := bytes.NewBufferString("")
-	cmd.Stdout = stdout
-	cmd.Stderr = uiWriter{ui: ui}
+	runArgs = append(runArgs, config.VMName)
 
-	// Prevent the Tart from opening the Screen Sharing
-	// window connected to the VNC server we're starting
-	if !config.DisableVNC {
-		cmd.Env = cmd.Environ()
-		cmd.Env = append(cmd.Env, "CI=true")
-	}
+	// cmd := exec.CommandContext(ctx, lumeCommand, runArgs...)
+	// stdout := bytes.NewBufferString("")
+	// cmd.Stdout = stdout
+	// cmd.Stderr = uiWriter{ui: ui}
 
-	if err := cmd.Start(); err != nil {
-		err = fmt.Errorf("Error starting VM: %s", err)
-		state.Put("error", err)
-		ui.Error(err.Error())
-		return multistep.ActionHalt
-	}
+	// ui.Say("Executing vm run")
+	// ui.Say(cmd.String())
 
-	state.Put("tart-cmd", cmd)
+	// if err := cmd.Start(); err != nil {
+	// 	err = fmt.Errorf("Error starting VM: %s", err)
+	// 	state.Put("error", err)
+	// 	ui.Error(err.Error())
+	// 	return multistep.ActionHalt
+	// }
 
-	ui.Say("Successfully started the virtual machine...")
+	// state.Put("tart-cmd", cmd)
 
-	if len(config.BootCommand) > 0 && !config.DisableVNC {
-		if !typeBootCommandOverVNC(ctx, state, config, ui, stdout) {
-			return multistep.ActionHalt
+	// ui.Say("Successfully started the virtual machine...")
+
+	ui.Say("Exec run")
+	// stdoutCh, stderrCh, errCh := LumeExec().
+	// 	WithContext(ctx).
+	// 	WithPackerUI(ui).
+	// 	WithSkipLumePrepend(true).
+	// 	WithSleep(1).
+	// 	WithArgs(runArgs...).
+	// 	DoChan()
+	// // Consume stdout lines in a goroutine or via select.
+	// go func() {
+	// 	for line := range stdoutCh {
+	// 		// process stdout line
+	// 		ui.Say(line)
+	// 	}
+	// }()
+
+	// // Consume stderr lines similarly.
+	// go func() {
+	// 	for line := range stderrCh {
+	// 		// process stderr line
+	// 		ui.Error(line)
+	// 	}
+	// }()
+
+	// // Optionally handle errors from errCh.
+	// if err, ok := <-errCh; ok {
+	// 	// handle error
+	// 	ui.Errorf("[Error] While running vm run: %v", err)
+	// 	return multistep.ActionHalt
+	// }
+
+	var stdoutChan <-chan *string
+	var errChan <-chan error
+	var ctxWithCancel context.Context
+	var cancel context.CancelFunc
+	var ip string
+	var err error
+
+	// var retryCount int = 5
+
+	// ? Currently facing a bug here where the VM IP is not allocated sometimes.
+	// ? So we try to run the VM and get the IP if the IP isn't available
+	// ? after some time, we re-run the VM and try to get the IP. This is done
+	// ? for `retryCount(5)` times.
+
+	// for {
+
+	ctxWithCancel, cancel = context.WithCancel(ctx)
+	stdoutChan, errChan = LumeExec().
+		WithContext(ctxWithCancel).
+		WithPackerUI(ui).
+		WithSkipLumePrepend(true).
+		WithSleep(1).
+		WithArgs(runArgs...).
+		DoChanPty()
+
+	ui.Say("Waiting for VM IP to be set")
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	timeout := time.After(1200 * time.Second)
+outerLoop:
+	for {
+		select {
+		case <-timeout:
+			err := fmt.Errorf("timed out waiting for VM IP to be set")
+			state.Put("error", err)
+			ui.Error(err.Error())
+			ui.Say("Cancelling the VM run since IP wasn't allocated.")
+			cancel()
+			sleepDuration = time.Second * 5
+			ui.Sayf("Waiting for %v for cancel to finish", sleepDuration)
+			time.Sleep(sleepDuration)
+			break outerLoop
+		case <-ticker.C:
+			ip, err = TartMachineIP(ctx, config.VMName, ui, []string{})
+			if err != nil {
+				ui.Errorf("IP not available. [ip: %v] Error: %v", ip, err)
+				continue
+			}
+			ui.Sayf("VM IP is set. Found IP to be %v", ip)
+			break outerLoop
 		}
 	}
 
-	return multistep.ActionContinue
+	if ip != "" {
+		ui.Sayf("Continuing since IP was successfully assigned.")
+		// break
+	}
+
+	// 	retryCount -= 1
+	// 	ui.Sayf("Retry Count Remaining: %v", retryCount)
+	// 	time.Sleep(15 * time.Second)
+
+	// 	if retryCount == 0 {
+	// 		ui.Errorf("No retries left for vm run. No IP was attached to the VM in the specified retries. Exiting...")
+	// 		return multistep.ActionHalt
+	// 	}
+
+	// }
+
+	if len(config.BootCommand) > 0 && !config.DisableVNC {
+		if !typeBootCommandOverVNC(ctx, state, config, ui, stdoutChan) {
+			return multistep.ActionHalt
+		}
+	} else {
+		// Consume stdout lines in a goroutine or via select.
+		go func() {
+			for line := range stdoutChan {
+				if line != nil {
+					// process stdout line
+					ui.Message(*line)
+				}
+			}
+		}()
+	}
+
+	sleepDuration = 1 * time.Minute
+	ui.Sayf("Sleeping for %v", sleepDuration)
+	time.Sleep(sleepDuration)
+
+	for {
+		select {
+		case err, ok := <-errChan:
+			if ok {
+				ui.Errorf("[Error] While running vm run: %v", err)
+				return multistep.ActionHalt
+			}
+		default:
+			ui.Sayf("Run step completed. Moving to next...")
+			// // TODO: remove the below line
+			// ui.Sayf("Sleeping for 1hr. Check for ssh enablement")
+			// time.Sleep(time.Hour)
+			state.Put("run/cancel-func", cancel)
+			state.Put("run/stdout-chan", stdoutChan)
+			state.Put("run/error-chan", errChan)
+			return multistep.ActionContinue
+		}
+	}
+
 }
 
 type uiWriter struct {
@@ -97,38 +230,33 @@ func (u uiWriter) Write(p []byte) (n int, err error) {
 
 // Cleanup stops the VM.
 func (s *stepRun) Cleanup(state multistep.StateBag) {
-	config := state.Get("config").(*Config)
-	ui := state.Get("ui").(packersdk.Ui)
-	cmd := state.Get("tart-cmd").(*exec.Cmd)
-	if cmd == nil {
-		return // Nothing to shut down
-	}
+	// config := state.Get("config").(*Config)
+	// ui := state.Get("ui").(packersdk.Ui)
+	// cancel := state.Get("run/cancel-func").(context.CancelFunc)
+	// if cancel == nil {
+	// 	return // Nothing to shut down
+	// }
 
-	communicator := state.Get("communicator")
-	if communicator != nil {
-		ui.Say("Gracefully shutting down the VM...")
-		shutdownCmd := packersdk.RemoteCmd{
-			Command: fmt.Sprintf("echo %s | sudo -S -p '' shutdown -h now", config.CommunicatorConfig.Password()),
-		}
+	// communicator := state.Get("communicator")
+	// if communicator != nil {
+	// 	ui.Say("Gracefully shutting down the VM...")
+	// 	shutdownCmd := packersdk.RemoteCmd{
+	// 		Command: fmt.Sprintf("echo %s | sudo -S -p '' shutdown -h now", config.CommunicatorConfig.Password()),
+	// 	}
 
-		err := shutdownCmd.RunWithUi(context.Background(), communicator.(packersdk.Communicator), ui)
-		if err != nil {
-			ui.Say("Failed to gracefully shutdown VM...")
-			ui.Error(err.Error())
-		}
-	} else {
-		ui.Say("Shutting down the VM...")
-		err := cmd.Process.Signal(os.Interrupt)
-		if err != nil {
-			ui.Say("Failed to shutdown VM...")
-			ui.Error(err.Error())
-		}
-	}
+	// 	err := shutdownCmd.RunWithUi(context.Background(), communicator.(packersdk.Communicator), ui)
+	// 	if err != nil {
+	// 		ui.Say("Failed to gracefully shutdown VM...")
+	// 		ui.Error(err.Error())
+	// 	}
+	// } else {
+	// 	ui.Say("Shutting down the VM...")
+	// 	cancel()
+	// }
 
-	// Always wait, even if we didn't initiate shutdown,
-	// so that we properly read and close stdout/stderr.
-	ui.Say("Waiting for the tart process to exit...")
-	_, _ = cmd.Process.Wait()
+	// ui.Say("Waiting for the process to exit...")
+	// // TODO: make this an actual wait
+	// time.Sleep(time.Second * 5)
 }
 
 func typeBootCommandOverVNC(
@@ -136,14 +264,14 @@ func typeBootCommandOverVNC(
 	state multistep.StateBag,
 	config *Config,
 	ui packersdk.Ui,
-	tartRunStdout *bytes.Buffer,
+	stdoutChan <-chan *string,
 ) bool {
 	ui.Say("Typing boot commands over VNC...")
 
 	if config.HTTPDir != "" || len(config.HTTPContent) != 0 {
 		ui.Say("Detecting host IP...")
 
-		hostIP, err := detectHostIP(ctx, config)
+		hostIP, err := detectHostIP(ctx, ui, config)
 		if err != nil {
 			err := fmt.Errorf("Failed to detect the host IP address: %v", err)
 			state.Put("error", err)
@@ -166,25 +294,38 @@ func typeBootCommandOverVNC(
 
 	ui.Say("Waiting for the VNC server credentials from Tart...")
 
-	vncCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	vncTimeoutDuration := 30 * time.Second
+	vncCtx, cancel := context.WithTimeout(ctx, vncTimeoutDuration)
 	defer cancel()
 
-	var vncPassword string
-	var vncHost string
-	var vncPort string
+	// var vncPassword string
+	// var vncHost string
+	// var vncPort string
+	var vncAddress string
+
+	// Consume stdout lines in a goroutine or via select.
+	go func() {
+		for line := range stdoutChan {
+			if line != nil {
+				// process stdout line
+				ui.Message(*line)
+				matches := vncRegexp.FindStringSubmatch(*line)
+				if vncAddress == "" && (len(matches) == 1+vncRegexp.NumSubexp()) {
+					vncAddress = matches[1]
+				}
+			}
+		}
+	}()
 
 	for {
-		matches := vncRegexp.FindStringSubmatch(tartRunStdout.String())
-		if len(matches) == 1+vncRegexp.NumSubexp() {
-			vncPassword = matches[1]
-			vncHost = matches[2]
-			vncPort = matches[3]
-
+		if vncAddress != "" {
+			ui.Sayf("VNC address found to be '%v'.", vncAddress)
 			break
 		}
 
 		select {
 		case <-vncCtx.Done():
+			ui.Errorf("Unable to find vnc address in the duration %v. Exiting...", vncTimeoutDuration)
 			return false
 		case <-time.After(time.Second):
 			// continue
@@ -192,9 +333,28 @@ func typeBootCommandOverVNC(
 	}
 
 	ui.Say("Retrieved VNC credentials, connecting...")
+
+	// Parse the URL to extract host, port, and password
+	parsedURL, err := url.Parse(vncAddress)
+	if err != nil {
+		ui.Errorf("Failed to parse VNC address: %v", err)
+		return false
+	}
+
+	vncHost := parsedURL.Hostname()             // should be "127.0.0.1"
+	vncPort := parsedURL.Port()                 // should be "49185" (example)
+	vncPassword, _ := parsedURL.User.Password() // extracts "beach-willow-purple-bold" (example)
+
 	ui.Message(fmt.Sprintf(
 		"If you want to view the screen of the VM, connect via VNC with the password \"%s\" to\n"+
 			"vnc://%s:%s", vncPassword, vncHost, vncPort))
+
+	var message string
+	sleepDuration := time.Second * 1
+	message = fmt.Sprintf("Waiting %v to let the run process complete "+
+		"to finish correctly...", sleepDuration)
+	ui.Say(message)
+	time.Sleep(sleepDuration)
 
 	dialer := net.Dialer{}
 	netConn, err := dialer.DialContext(ctx, "tcp", fmt.Sprintf("%s:%s", vncHost, vncPort))
@@ -229,7 +389,7 @@ func typeBootCommandOverVNC(
 		time.Sleep(config.VNCConfig.BootWait)
 	}
 
-	message := fmt.Sprintf("Typing commands with key interval %v...", config.BootKeyInterval)
+	message = fmt.Sprintf("Typing commands with key interval %v...", config.BootKeyInterval)
 	ui.Say(message)
 
 	vncDriver := bootcommand.NewVNCDriver(vncClient, config.BootKeyInterval)
@@ -265,12 +425,12 @@ func typeBootCommandOverVNC(
 	return true
 }
 
-func detectHostIP(ctx context.Context, config *Config) (string, error) {
+func detectHostIP(ctx context.Context, ui packer.Ui, config *Config) (string, error) {
 	if config.HTTPAddress != "0.0.0.0" {
 		return config.HTTPAddress, nil
 	}
 
-	vmIPRaw, err := TartMachineIP(ctx, config.VMName, config.IpExtraArgs)
+	vmIPRaw, err := TartMachineIP(ctx, config.VMName, ui, config.IpExtraArgs)
 	if err != nil {
 		return "", fmt.Errorf("%w: while running \"tart ip\": %v",
 			ErrFailedToDetectHostIP, err)

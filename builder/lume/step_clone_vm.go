@@ -21,7 +21,11 @@ func (s *stepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 	cmdArgs := []string{"clone", config.VMBaseName, config.VMName}
 	cmdArgs = append(cmdArgs, commonArgs...)
 
-	if _, err := LumeExec().WithContext(ctx).WithPackerUI(ui).WithArgs(cmdArgs...).Do(); err != nil {
+	if _, err := LumeExec().
+		WithContext(ctx).
+		WithPackerUI(ui).
+		WithArgs(cmdArgs...).
+		Do(); err != nil {
 		err := fmt.Errorf("Error cloning VM: %s", err)
 		state.Put("error", err)
 		return multistep.ActionHalt
