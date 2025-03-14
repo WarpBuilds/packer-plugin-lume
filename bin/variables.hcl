@@ -1,4 +1,4 @@
-ipsw="~/Downloads/UniversalMac_15.3.1_24D70_Restore.ipsw"
+ipsw="/Users/administrator/Downloads/UniversalMac_15.3.1_24D70_Restore.ipsw"
 vm_name="v002"
 vm_base_name="v002"
 # vm_base_name="v1"
