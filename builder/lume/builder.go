@@ -38,7 +38,7 @@ type Config struct {
 	Display           string        `mapstructure:"display"`
 	Headless          bool          `mapstructure:"headless"`
 	Memory            string        `mapstructure:"memory"`
-	Recovery          bool          `mapstructure:"recovery"`
+	RecoveryMode      bool          `mapstructure:"recovery_mode"`
 	Rosetta           string        `mapstructure:"rosetta"`
 	RunExtraArgs      []string      `mapstructure:"run_extra_args"`
 	IpExtraArgs       []string      `mapstructure:"ip_extra_args"`
@@ -124,7 +124,7 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 		steps = append(steps, new(stepRun))
 	}
 
-	if !b.config.Recovery && communicatorConfigured {
+	if !b.config.RecoveryMode && communicatorConfigured {
 
 		ui.Say("SSH")
 		ui.Sayf("%+v", b.config.CommunicatorConfig.SSH)

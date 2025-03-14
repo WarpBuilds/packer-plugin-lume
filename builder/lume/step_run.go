@@ -47,8 +47,8 @@ func (s *stepRun) Run(ctx context.Context, state multistep.StateBag) multistep.S
 	if config.Headless {
 		runArgs = append(runArgs, "--no-display")
 	}
-	if config.Recovery {
-		runArgs = append(runArgs, "--recovery")
+	if config.RecoveryMode {
+		runArgs = append(runArgs, "--recovery-mode=true")
 	}
 	if config.Rosetta != "" {
 		runArgs = append(runArgs, fmt.Sprintf("--rosetta=%s", config.Rosetta))
