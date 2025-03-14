@@ -64,7 +64,7 @@ source "lume-cli" "lume" {
 
   boot_command = [
     # hello, hola, bonjour, etc.
-    "<wait60s>${var.vm_password}<spacebar>",
+    "<wait60s>${var.vm_password}<enter>",
   ]
 
   # // A (hopefully) temporary workaround for Virtualization.Framework's
