@@ -12,10 +12,10 @@ variable "vm_name" {
   type = string
 }
 
-variable "vm_base_name" {
-  type    = string
-  default = ""
-}
+# variable "vm_base_name" {
+#   type    = string
+#   default = ""
+# }
 
 variable "vm_username" {
   type      = string
@@ -50,8 +50,8 @@ variable "ipsw" {
 }
 
 source "lume-cli" "lume" {
-  ipsw         = var.ipsw
-  vm_base_name = var.vm_base_name
+  ipsw = var.ipsw
+  # vm_base_name = var.vm_base_name
   vm_name      = var.vm_name
   cpu_count    = var.vcpu_count
   memory       = var.ram_size
