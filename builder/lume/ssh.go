@@ -53,8 +53,8 @@ func TartMachineIP(ctx context.Context, vmName string, ui packer.Ui, ipExtraArgs
 				outChan = nil
 			}
 		}
-		// Break out of the loop if both channels are done.
-		if errChan == nil && outChan == nil {
+		// Break out of the loop if ip is found.
+		if ip != "" {
 			break
 		}
 	}
