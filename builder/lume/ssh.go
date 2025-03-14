@@ -26,6 +26,7 @@ func TartMachineIP(ctx context.Context, vmName string, ui packer.Ui, ipExtraArgs
 	for {
 		select {
 		case err, ok := <-errChan:
+			ui.Say("Executing error chan logic")
 			if !ok {
 				// errChan is closed; set it to nil so this case is never selected again.
 				ui.Sayf("Found error chan to be closed.")
@@ -35,6 +36,7 @@ func TartMachineIP(ctx context.Context, vmName string, ui packer.Ui, ipExtraArgs
 			ui.Errorf("[Error] While fetching vm IP: %v", err)
 			return "", err
 		case line, ok := <-outChan:
+			ui.Say("Executing out chan logic")
 			if !ok || line == nil {
 				// outChan is closed; set it to nil.
 				ui.Sayf("Found out chan to be closed.")
