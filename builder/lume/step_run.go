@@ -112,8 +112,8 @@ func (s *stepRun) Run(ctx context.Context, state multistep.StateBag) multistep.S
 	var errChan <-chan error
 	var ctxWithCancel context.Context
 	var cancel context.CancelFunc
-	var ip string
-	var err error
+	// var ip string
+	// var err error
 
 	// var retryCount int = 5
 
@@ -133,39 +133,39 @@ func (s *stepRun) Run(ctx context.Context, state multistep.StateBag) multistep.S
 		WithArgs(runArgs...).
 		DoChanPty()
 
-	ui.Say("Waiting for VM IP to be set")
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
+		// 	ui.Say("Waiting for VM IP to be set")
+		// 	ticker := time.NewTicker(5 * time.Second)
+		// 	defer ticker.Stop()
 
-	timeout := time.After(1200 * time.Second)
-outerLoop:
-	for {
-		select {
-		case <-timeout:
-			err := fmt.Errorf("timed out waiting for VM IP to be set")
-			state.Put("error", err)
-			ui.Error(err.Error())
-			ui.Say("Cancelling the VM run since IP wasn't allocated.")
-			cancel()
-			sleepDuration = time.Second * 5
-			ui.Sayf("Waiting for %v for cancel to finish", sleepDuration)
-			time.Sleep(sleepDuration)
-			break outerLoop
-		case <-ticker.C:
-			ip, err = TartMachineIP(ctx, config.VMName, ui, []string{})
-			if err != nil {
-				ui.Errorf("IP not available. [ip: %v] Error: %v", ip, err)
-				continue
-			}
-			ui.Sayf("VM IP is set. Found IP to be %v", ip)
-			break outerLoop
-		}
-	}
+		// 	timeout := time.After(1200 * time.Second)
+		// outerLoop:
+		// 	for {
+		// 		select {
+		// 		case <-timeout:
+		// 			err := fmt.Errorf("timed out waiting for VM IP to be set")
+		// 			state.Put("error", err)
+		// 			ui.Error(err.Error())
+		// 			ui.Say("Cancelling the VM run since IP wasn't allocated.")
+		// 			cancel()
+		// 			sleepDuration = time.Second * 5
+		// 			ui.Sayf("Waiting for %v for cancel to finish", sleepDuration)
+		// 			time.Sleep(sleepDuration)
+		// 			break outerLoop
+		// 		case <-ticker.C:
+		// 			ip, err = TartMachineIP(ctx, config.VMName, ui, []string{})
+		// 			if err != nil {
+		// 				ui.Errorf("IP not available. [ip: %v] Error: %v", ip, err)
+		// 				continue
+		// 			}
+		// 			ui.Sayf("VM IP is set. Found IP to be %v", ip)
+		// 			break outerLoop
+		// 		}
+		// 	}
 
-	if ip != "" {
-		ui.Sayf("Continuing since IP was successfully assigned.")
-		// break
-	}
+		// 	if ip != "" {
+		// 		ui.Sayf("Continuing since IP was successfully assigned.")
+		// 		// break
+		// 	}
 
 	// 	retryCount -= 1
 	// 	ui.Sayf("Retry Count Remaining: %v", retryCount)
