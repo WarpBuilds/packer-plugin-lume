@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/packer"
 )
 
-var localIPv4Regex = regexp.MustCompile(`\(([0-9\.]*)\)`)
+var localIPv4Regex = regexp.MustCompile(`\b((?:[0-9]{1,3}\.){3}[0-9]{1,3})\b`)
 
 func TartMachineIP(ctx context.Context, vmName string, ui packer.Ui, ipExtraArgs []string) (string, error) {
 	ipArgs := []string{fmt.Sprintf("lume get %s | tail -n 1 | awk '{ print $8 }'", vmName)}

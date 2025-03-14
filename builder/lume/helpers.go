@@ -308,6 +308,7 @@ func (eb *execBuilder) DoChanPty() (<-chan *string, <-chan error) {
 	ptyFile, err := pty.Start(cmd)
 	errCh := make(chan error, 1)
 	if err != nil {
+		eb.ui.Errorf("Failed to start command in pseudo terminal. Error: %v", errCh)
 		errCh <- err
 		close(errCh)
 		outCh := make(chan *string)
