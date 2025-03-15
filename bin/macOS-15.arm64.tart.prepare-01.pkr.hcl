@@ -138,4 +138,8 @@ build {
     environment_vars = ["PASSWORD=${var.vm_password}"]
     scripts          = ["./scripts/prepare/setup-system.sh"]
   }
+
+  post-processor "lume-export" {
+    tag = "image"
+  }
 }

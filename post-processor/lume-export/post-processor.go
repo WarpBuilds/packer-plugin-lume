@@ -24,14 +24,12 @@ import (
 // Config defines the post-processor configuration.
 type Config struct {
 	common.PackerConfig `mapstructure:",squash"`
+	homeDir             string
+	folderPath          string
 	VMName              string `mapstructure:"vm_name"`
 	Tag                 string `mapstructure:"tag"`
 	ChunkSize           string `mapstructure:"chunk_size"`
 	ctx                 interpolate.Context
-}
-
-func (c Config) FolderPath() string {
-	return fmt.Sprintf("~/.lume/%s", c.VMName)
 }
 
 // PostProcessor implements the post-processor interface.
@@ -61,7 +59,17 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 	// Set a default chunk size if not provided.
 	if p.config.ChunkSize == "" {
 		p.config.ChunkSize = "500M"
+
 	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get home directory: %s", err)
+	}
+
+	p.config.homeDir = homeDir
+	p.config.folderPath = filepath.Join(homeDir, ".lume", p.config.VMName)
+
 	return nil
 }
 
@@ -73,7 +81,7 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packersdk.Ui, source
 	}
 
 	// Create a temporary working directory.
-	workDir, err := ioutil.TempDir(fmt.Sprintf("~/.lume/%s", p.config.VMName), "save-image")
+	workDir, err := ioutil.TempDir(p.config.folderPath, "save-image")
 	if err != nil {
 		return source, false, false, fmt.Errorf("failed to create work directory: %s", err)
 	}
@@ -81,15 +89,15 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packersdk.Ui, source
 	ui.Say(fmt.Sprintf("Working directory: %s", workDir))
 
 	// Copy optional files from the folder path.
-	if err := p.copyFileIfExists(filepath.Join(p.config.FolderPath(), "config.json"), filepath.Join(workDir, "config.json"), ui); err != nil {
+	if err := p.copyFileIfExists(filepath.Join(p.config.folderPath, "config.json"), filepath.Join(workDir, "config.json"), ui); err != nil {
 		return source, false, false, err
 	}
-	if err := p.copyFileIfExists(filepath.Join(p.config.FolderPath(), "nvram.bin"), filepath.Join(workDir, "nvram.bin"), ui); err != nil {
+	if err := p.copyFileIfExists(filepath.Join(p.config.folderPath, "nvram.bin"), filepath.Join(workDir, "nvram.bin"), ui); err != nil {
 		return source, false, false, err
 	}
 
 	// Process disk image.
-	diskImgSrc := filepath.Join(p.config.FolderPath(), "disk.img")
+	diskImgSrc := filepath.Join(p.config.folderPath, "disk.img")
 	diskImgPath, err := p.processDiskImg(diskImgSrc, workDir, ui)
 	if err != nil {
 		return source, false, false, err
