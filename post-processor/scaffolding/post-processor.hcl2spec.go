@@ -18,7 +18,9 @@ type FlatConfig struct {
 	PackerOnError       *string           `mapstructure:"packer_on_error" cty:"packer_on_error" hcl:"packer_on_error"`
 	PackerUserVars      map[string]string `mapstructure:"packer_user_variables" cty:"packer_user_variables" hcl:"packer_user_variables"`
 	PackerSensitiveVars []string          `mapstructure:"packer_sensitive_variables" cty:"packer_sensitive_variables" hcl:"packer_sensitive_variables"`
-	MockOption          *string           `mapstructure:"mock" cty:"mock" hcl:"mock"`
+	VMName              *string           `mapstructure:"vm_name" cty:"vm_name" hcl:"vm_name"`
+	Tag                 *string           `mapstructure:"tag" cty:"tag" hcl:"tag"`
+	ChunkSize           *string           `mapstructure:"chunk_size" cty:"chunk_size" hcl:"chunk_size"`
 }
 
 // FlatMapstructure returns a new FlatConfig.
@@ -41,7 +43,9 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"packer_on_error":            &hcldec.AttrSpec{Name: "packer_on_error", Type: cty.String, Required: false},
 		"packer_user_variables":      &hcldec.AttrSpec{Name: "packer_user_variables", Type: cty.Map(cty.String), Required: false},
 		"packer_sensitive_variables": &hcldec.AttrSpec{Name: "packer_sensitive_variables", Type: cty.List(cty.String), Required: false},
-		"mock":                       &hcldec.AttrSpec{Name: "mock", Type: cty.String, Required: false},
+		"vm_name":                    &hcldec.AttrSpec{Name: "vm_name", Type: cty.String, Required: false},
+		"tag":                        &hcldec.AttrSpec{Name: "tag", Type: cty.String, Required: false},
+		"chunk_size":                 &hcldec.AttrSpec{Name: "chunk_size", Type: cty.String, Required: false},
 	}
 	return s
 }
