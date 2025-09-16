@@ -3,7 +3,7 @@ packer {
     lume = {
       version = ">= v0.0.1"
       # version = "= 0.0.1-dev"
-      source = "github.com/trycua/packer-plugin-lume"
+      source = "github.com/trycua/lume"
     }
   }
 }
@@ -62,6 +62,7 @@ source "lume-cli" "lume" {
 
   # headless     = true
 
+  # Modified from https://github.com/cirruslabs/macos-image-templates/blob/5f66cb1ca2f31ddbbdff34be5e3561584cd67d4b/templates/vanilla-sequoia.pkr.hcl
   boot_command = [
     # hello, hola, bonjour, etc.
     "<wait60s><spacebar>",
@@ -137,9 +138,5 @@ build {
   provisioner "shell" {
     environment_vars = ["PASSWORD=${var.vm_password}"]
     scripts          = ["./scripts/prepare/setup-system.sh"]
-  }
-
-  post-processor "lume-export" {
-    tag = "image"
   }
 }
