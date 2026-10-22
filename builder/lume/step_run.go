@@ -99,6 +99,10 @@ func (s *stepRun) Run(ctx context.Context, state multistep.StateBag) multistep.S
 				ui.Errorf("[Error] While running vm run: %v", err)
 				return multistep.ActionHalt
 			}
+			// The lume run process already exited (for example the guest halted
+			// during the sleep above). A closed channel is always ready, so stop
+			// selecting on it or this loop never reaches the default case.
+			errChan = nil
 		default:
 			ui.Sayf("Run step completed. Moving to next...")
 			// // TODO: remove the below line
